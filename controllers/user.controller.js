@@ -121,6 +121,60 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
+// Suppression d'un utilisateur
+// Seul un admin peut supprimer un utilisateur
+// Un utilisateur Admin ne peut pas etre supprimé !!!!!
+
+const deleteUserById = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (user) {
+    if (user.isAdmin) {
+      res.status(400);
+      throw new Error("Cannot delete admin user");
+    }
+    await User.deleteOne({ _id: user._id });
+    res.json({ message: "User deleted Successfully !" });
+  } else {
+    res.status(404);
+    throw new Error("User not found");
+  }
+});
+
+const getUserById = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id).select("-password");
+
+  if (user) {
+    res.json(user);
+  } else {
+    res.status(404);
+    throw new Error("User not found");
+  }
+});
+
+// Seul les admins peuvent modifier les utilisateurs (pas leurs mots de passe).
+
+const updateUserById = asyncHandler(async (req, res) => {
+  const user = await User.findById(eq.params.id);
+
+  if (user) {
+    user.username = req.body.username || user.username;
+    user.email = req.body.email || user.email;
+    user.isAdmin = Boolean(req.body.isAdmin);
+
+    const updatedUser = await user.save();
+    res.json({
+      _id: updatedUser._id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      isAdmin: updatedUser.isAdmin,
+    });
+  } else {
+    res.status(404);
+    throw new Error("User not found");
+  }
+});
+
 export {
   createUser,
   loginUser,
@@ -128,4 +182,7 @@ export {
   getAllUsers,
   getCurrentUserProfile,
   updateUserProfile,
+  deleteUserById,
+  getUserById,
+  updateUserById,
 };

@@ -3,6 +3,7 @@ import asyncHandler from "../middleware/asyncHandler.js";
 import bcrypt from "bcryptjs";
 import createToken from "../utils/createToken.js";
 
+// Inscription d'un nouvel utilisateur
 const createUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -32,6 +33,8 @@ const createUser = asyncHandler(async (req, res) => {
     throw new Error("Invalid user data");
   }
 });
+
+// Connexion sur l'application.
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -67,4 +70,62 @@ const logoutCurrentUser = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 });
 
-export { createUser, loginUser, logoutCurrentUser };
+// Renvoie tous les utilisateurs à condition que le
+// le demandeur soit authentifié et authorisé à effectuer cette requete !
+// Voir le middleware dans les routes
+
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({});
+  res.json(users);
+});
+
+const getCurrentUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+    });
+  } else {
+    res.status(404);
+    throw new Error("User not found");
+  }
+});
+
+// All to update user infos.
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    user.username = req.body.username || user.username;
+    user.email = req.body.email || user.email;
+
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash(req.body.password, salt);
+      user.password = hashedPassword;
+    }
+
+    const updatedUser = await user.save();
+    res.status(201).json({
+      _id: updatedUser._id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      isAdmin: updatedUser.isAdmin,
+    });
+  } else {
+    res.status(404);
+    throw new Error("User not found !");
+  }
+});
+
+export {
+  createUser,
+  loginUser,
+  logoutCurrentUser,
+  getAllUsers,
+  getCurrentUserProfile,
+  updateUserProfile,
+};

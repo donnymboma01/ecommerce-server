@@ -1,16 +1,16 @@
 import jwt from "jsonwebtoken";
-import User from "../models/user.model";
-import asyncHandler from "./asyncHandler";
+import User from "../models/user.model.js";
+import asyncHandler from "./asyncHandler.js";
 
 const authenticate = asyncHandler(async (req, res, next) => {
   let token;
 
   // Read the jwt from 'jwt' cookie
-  token = req.cookie.jwt;
+  token = req.cookies.jwt;
 
   if (token) {
     try {
-      const decoded = jw.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.userId).select("-password");
       next();
     } catch (error) {
